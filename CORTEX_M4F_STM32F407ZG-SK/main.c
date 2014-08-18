@@ -29,6 +29,8 @@
 #include "main.h"
 #include "game.h"
 
+#include "stm32f4xx_usart.h"
+
 #include "FreeRTOS.h"
 #include "task.h"
 #include <math.h>
@@ -76,6 +78,7 @@ static void GameEventTask2( void *pvParameters )
 {
 	while( 1 ){
 		GAME_EventHandler2();
+		vTaskDelay( 10 );
 	}
 }
 
@@ -95,10 +98,28 @@ static void GameTask( void *pvParameters )
 	}
 }
 
+static void MyuartInit(void)
+{
+    USART_InitTypeDef   uartConfig;
+    
+    uartConfig.USART_BaudRate = 115200;
+    uartConfig.USART_WordLength = USART_WordLength_8b;
+    uartConfig.USART_StopBits = USART_StopBits_1;
+    uartConfig.USART_Parity = USART_Parity_No;
+    uartConfig.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+    uartConfig.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+    
+    USART_Init(USART1, &uartConfig);
+    
+}
+
 //Main Function
 int main(void)
 {
 	prvInit();
+	
+	MyuartInit();
+	//USART1_puts("hey mom, I'm here!\n");
 
 	if( STM_EVAL_PBGetState( BUTTON_USER ) )
 		demoMode = 1;
