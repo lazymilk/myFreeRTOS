@@ -20,7 +20,7 @@ int16_t player2X = LCD_PIXEL_WIDTH - 20;
 int16_t player2Y = LCD_PIXEL_HEIGHT - 20;
 uint16_t player2W = 60;
 uint16_t player2H = 10;
-uint8_t player2IsReversed = 0;
+int8_t player2IsReversed = 0;
 
 //Ball
 uint16_t ballSize = 5;
@@ -32,6 +32,7 @@ uint8_t ballIsRun = 0;
 
 //Mode
 uint8_t demoMode = 0;
+#define PLAYER1_IS_NPC
 
 void
 BallReset()
@@ -61,13 +62,27 @@ GAME_EventHandler1()
 void
 GAME_EventHandler2()
 {
-	if( IOE_TP_GetState()->TouchDetected ){
+    TP_STATE *ptp_state;
+    
+    ptp_state = IOE_TP_GetState();
+	if( ptp_state->TouchDetected ){
 
-		player2IsReversed = 1;
-
-		while( IOE_TP_GetState()->TouchDetected );
-
-		player2IsReversed = 0;
+		if (ptp_state->X >= 120) {
+		    if (ptp_state->X >= 180) {
+		        player2IsReversed = 2;
+		    } else {
+		        player2IsReversed = 1;
+		    }
+		} else {
+		    if (ptp_state->X >= 60) {
+		        player2IsReversed = -1;
+		    } else {
+		        player2IsReversed = -2;
+		    }
+		}
+		
+	} else {
+	    player2IsReversed = 0;
 	}
 }
 
@@ -88,7 +103,8 @@ GAME_Update()
 	LCD_DrawFullRect( player2X, player2Y, player2W, player2H );
 
 	if( demoMode == 0 ){
-
+	    
+#ifndef PLAYER1_IS_NPC
 		if( player1IsReversed )
 			player1X -= 5;
 		else
@@ -98,12 +114,40 @@ GAME_Update()
 			player1X = 0;
 		else if( player1X + player1W >= LCD_PIXEL_WIDTH )
 			player1X = LCD_PIXEL_WIDTH - player1W;
+#else			
+		//Player1 move
+			if( ballVY < 0 ){
+				if( player1X + player1W/2 < ballX + ballSize/2 ){
+					player1X += 6;
+				}
+				else{
+					player1X -= 6;
+				}
+			}
+
+			if( player1X <= 0 )
+				player1X = 0;
+			else if( player1X + player1W >= LCD_PIXEL_WIDTH )
+				player1X = LCD_PIXEL_WIDTH - player1W;
+#endif			
 
 		//Player2
-		if( player2IsReversed )
-			player2X -= 5;
-		else
-			player2X += 5;
+		switch (player2IsReversed) {
+		    case 1:
+		        player2X += 5;
+		        break;
+		    case 2:
+		        player2X += 7;
+		        break;
+		    case -1:
+		        player2X -= 5;
+		        break;
+		    case -2:
+		        player2X -= 7;
+		        break;
+		    default:
+		        break;
+		}
 
 		if( player2X <= 0 )
 			player2X = 0;
