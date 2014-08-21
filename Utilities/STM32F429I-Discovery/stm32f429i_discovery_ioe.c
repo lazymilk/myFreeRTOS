@@ -39,7 +39,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f429i_discovery_ioe.h"
-
+#include "game.h"
 /** @addtogroup Utilities
   * @{
   */
@@ -819,10 +819,14 @@ uint16_t I2C_DMA_ReadDataBuffer(uint32_t RegisterAddr)
 static uint16_t IOE_TP_Read_X(void)
 {
   int32_t x, xr;
+  //char  str[16];
   
   /* Read x value from DATA_X register */
   x = I2C_ReadDataBuffer(IOE_REG_TP_DATA_X);
-  
+  // for debug
+  //USART_puts(USART1, itoa(x, str, 10));
+  //USART_puts(USART1, "\n\r");
+
   /* x value first correction */
   if(x <= 3000)
   {
@@ -841,7 +845,7 @@ static uint16_t IOE_TP_Read_X(void)
   {
     xr = 0;
   }
-  else if (xr > 240)
+  else if (xr >= 240)
   {
     xr = 239;
   }
@@ -874,7 +878,7 @@ static uint16_t IOE_TP_Read_Y(void)
   {
     yr = 0;
   }
-  else if (yr > 320)
+  else if (yr >= 320)
   {
     yr = 319;
   }

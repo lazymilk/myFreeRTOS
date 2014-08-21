@@ -1,12 +1,14 @@
-#include "game.h"
-#include "main.h"
-
-#include "FreeRTOS.h"
-#include "task.h"
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "stm32f4xx_usart.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "main.h"
+#include "game.h"
+
+#define __DEBUG
 
 //Player1
 int16_t player1X = 10;
@@ -46,6 +48,93 @@ BallReset()
 	ballIsRun = 1;
 }
 
+void uart1Init(void)
+{
+    USART_InitTypeDef   uartConfig;
+    GPIO_InitTypeDef    GPIO_InitStructure;
+    
+    uartConfig.USART_BaudRate = 115200;
+    uartConfig.USART_WordLength = USART_WordLength_8b;
+    uartConfig.USART_StopBits = USART_StopBits_1;
+    uartConfig.USART_Parity = USART_Parity_No;
+    uartConfig.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+    uartConfig.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+    
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9 | GPIO_Pin_10;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF;
+    GPIO_InitStructure.GPIO_OType = GPIO_OType_PP;
+    GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    
+    /* following step refs to stm32f4xx_usart.c */
+    /* Enable peripheral clock */
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
+    /* According to the USART mode, enable the GPIO clocks */
+    RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_GPIOA, ENABLE);
+    /* Connect the pin to the desired peripherals' Alternate 
+            Function (AF) using GPIO_PinAFConfig() function */
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource9, GPIO_AF_USART1);
+    GPIO_PinAFConfig(GPIOA, GPIO_PinSource10, GPIO_AF_USART1);
+    /* Call GPIO_Init() function */
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+    /* USART_Init() */
+    USART_Init(USART1, &uartConfig);
+    /* TODO: using the DMA mode  */
+    /* Enable the USART */
+    USART_Cmd(USART1, ENABLE);
+    /* TODO: Enable DMA */
+    
+}
+
+char* itoa(int value, char* result, int base)
+{
+	if (base < 2 || base > 36) {
+		*result = '\0';
+		return result;
+	}
+	char *ptr = result, *ptr1 = result, tmp_char;
+	int tmp_value;
+
+	do {
+		tmp_value = value;
+		value /= base;
+		*ptr++ = "zyxwvutsrqponmlkjihgfedcba9876543210123456789abcdefghijklmnopqrstuvwxyz" [35 + (tmp_value - value * base)];
+	} while (value);
+
+	if (tmp_value < 0) *ptr++ = '-';
+	*ptr-- = '\0';
+	while (ptr1 < ptr) {
+		tmp_char = *ptr;
+		*ptr-- = *ptr1;
+		*ptr1++ = tmp_char;
+	}
+	return result;
+}
+
+void USART_puts(USART_TypeDef* USARTx, volatile char *s)
+{
+    while(*s)
+    { // wait until data register is empty
+        while( !(USARTx->SR & 0x00000040) );
+        USART_SendData(USARTx, *s);
+        *s++;
+    }
+}
+
+void __DEBUG printLocation(int x, int y, int z)
+{
+    char    str[16];
+    
+    USART_puts(USART1, "X: ");
+    USART_puts(USART1, itoa(x, str, 10));
+    USART_puts(USART1, ", Y: ");
+    USART_puts(USART1, itoa(y, str, 10));
+    USART_puts(USART1, ", Z: ");
+    USART_puts(USART1, itoa(z, str, 10));
+    USART_puts(USART1, "\n\r");
+    return;
+}
+
 void
 GAME_EventHandler1()
 {
@@ -65,6 +154,9 @@ GAME_EventHandler2()
     TP_STATE *ptp_state;
     
     ptp_state = IOE_TP_GetState();
+    
+    printLocation((int)ptp_state->X, (int)ptp_state->Y, (int)ptp_state->Z);
+    
 	if( ptp_state->TouchDetected ){
 
 		if (ptp_state->X >= 120) {

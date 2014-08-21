@@ -1,6 +1,10 @@
 #ifndef GAME_H
 #define GAME_H
 
+void uart1Init(void);
+void USART_puts(USART_TypeDef* USARTx, volatile char *s);
+char* itoa(int value, char* result, int base);
+
 void
 EventHandler1();
 

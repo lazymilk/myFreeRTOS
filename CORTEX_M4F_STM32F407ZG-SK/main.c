@@ -98,28 +98,14 @@ static void GameTask( void *pvParameters )
 	}
 }
 
-static void MyuartInit(void)
-{
-    USART_InitTypeDef   uartConfig;
-    
-    uartConfig.USART_BaudRate = 115200;
-    uartConfig.USART_WordLength = USART_WordLength_8b;
-    uartConfig.USART_StopBits = USART_StopBits_1;
-    uartConfig.USART_Parity = USART_Parity_No;
-    uartConfig.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
-    uartConfig.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-    
-    USART_Init(USART1, &uartConfig);
-    
-}
-
 //Main Function
 int main(void)
 {
 	prvInit();
 	
-	MyuartInit();
-	//USART1_puts("hey mom, I'm here!\n");
+	
+	uart1Init();
+	USART_puts(USART1, "Hey mom, I'm here!\n\r");
 
 	if( STM_EVAL_PBGetState( BUTTON_USER ) )
 		demoMode = 1;
